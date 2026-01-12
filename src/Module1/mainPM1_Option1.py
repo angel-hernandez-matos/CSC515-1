@@ -24,15 +24,22 @@ class TestCaseRunner:
     def run_test():
         import numpy as np
         import cv2
+        folder = None
         img = cv2.imread('shutterstock93075775--250.jpg')
-        CSIDL_DESKTOP = 0
-        SHGFP_TYPE_CURRENT = 0
-        buf = ctypes.create_unicode_buffer(260)
-        ctypes.windll.shell32.SHGetFolderPathW(None, CSIDL_DESKTOP, None, SHGFP_TYPE_CURRENT, buf)
-        desktop = Path(buf.value)
-        folder = desktop / "CSC515-1"
+
+        if os.name == 'nt':
+            CSIDL_DESKTOP = 0
+            SHGFP_TYPE_CURRENT = 0
+            buf = ctypes.create_unicode_buffer(260)
+            ctypes.windll.shell32.SHGetFolderPathW(None, CSIDL_DESKTOP, None, SHGFP_TYPE_CURRENT, buf)
+            desktop = Path(buf.value)
+            folder = desktop / "CSC515-1"
+        else:
+            desktop = Path.home() / "Desktop"
+            folder = desktop / "CSC515-1"
+
         folder.mkdir(exist_ok=True)
-        cv2.imwrite( f"{folder}\\shutterstock93075775--250_copy.jpg", img)
+        cv2.imwrite( f"{folder}/shutterstock93075775--250_copy.jpg", img)
         cv2.imshow('shutterstock93075775--250.jpg', img)
         cv2.waitKey(0)
         cv2.destroyAllWindows()
@@ -43,7 +50,8 @@ def clear_screen():
 
 def main():
     try:
-        DependencyChecker.ensure_package('opencv-python') # This installs numpy
+        DependencyChecker.ensure_package('numpy')
+        DependencyChecker.ensure_package('opencv-python')
         clear_screen()
         print('*** Module 1 - Portfolio Milestone 1 ***\n')
         TestCaseRunner.run_test()
