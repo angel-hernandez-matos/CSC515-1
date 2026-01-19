@@ -125,7 +125,11 @@ class ImageProcessor:
         for n,m in matrices:
             idx += 1
             self.__plt.subplot(2, 3, idx)
-            self.__plt.imshow(m, cmap="gray")
+            if n == "Original":
+                m = self.__cv2.cvtColor(m, self.__cv2.COLOR_BGR2RGB)
+                self.__plt.imshow(m)
+            else:
+                self.__plt.imshow(m, cmap="gray")
             self.__plt.title(n)
             self.__plt.axis('off')
         self.__plt.tight_layout()

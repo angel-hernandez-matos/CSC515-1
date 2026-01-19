@@ -44,11 +44,13 @@ class ImageProcessor:
         height,width,channels = self.__load_image()
         b,g,r = self.__extract_channels()
         rgb_split = self.__rgb_split(height,width,b, g, r)
-        matrices = [("Original", self.__image), ("Extracted Channels", rgb_split)]
+        matrices = [("Original", self.__image), ("Extracted Channels (B,G,R)", rgb_split),
+                    ("Merged Back (3D Image)", self.__merge_back(b,g,r)),
+                    ("Exchange Reds with Greens ", self.__exchange_red_with_green(b,g,r)), ]
         self.__show_with_matplotlib(matrices)
 
     def __load_image(self):
-        self.__image = self.__cv2.imread(self.__selected_image)
+        self.__image = self.__cv2.imread(self.__selected_image, 1)
         return self.__image.shape
 
     def __extract_channels(self):
@@ -62,20 +64,30 @@ class ImageProcessor:
         retval[:, width*2:width*3] = self.__cv2.merge([r, r, r])
         return retval
 
+    def __merge_back(self, b, g, r):
+        return self.__cv2.merge([b, g, r])
+
+    def __exchange_red_with_green(self, b, g, r):
+        return self.__cv2.merge([b, r, g])
+
     def __show_with_matplotlib(self, matrices):
         idx = 0
         dpi = 100  # typical DPI
-        largest_image = next(m for n, m in matrices if n == "Extracted Channels")
+        largest_image = next(m for n, m in matrices if n == "Extracted Channels (B,G,R)")
         temp_height,width,channels = self.__image.shape
         temp_width = len(largest_image[1])
-        tile_width = temp_width / dpi
-        tile_height = temp_height / dpi
+        tile_width = temp_width * 3 / dpi
+        tile_height = temp_height * 3 / dpi
         figure = self.__plt.figure(figsize=(tile_width, tile_height), dpi=dpi) # Let's define tile's size
         figure.canvas.manager.set_window_title('Channels Extraction Demo - Critical Thinking - Module 2')
-        for n,m in matrices:
+        for n, m in matrices:
             idx += 1
-            self.__plt.subplot(2, 1, idx)
-            self.__plt.imshow(m, cmap="gray")
+            self.__plt.subplot(4, 1, idx)
+            if n == "Original" or n == "Merged Back (3D Image)":
+                m = self.__cv2.cvtColor(m, self.__cv2.COLOR_BGR2RGB)
+                self.__plt.imshow(m)
+            else:
+                self.__plt.imshow(m, cmap="gray")
             self.__plt.title(n)
             self.__plt.axis('off')
         self.__plt.tight_layout()
