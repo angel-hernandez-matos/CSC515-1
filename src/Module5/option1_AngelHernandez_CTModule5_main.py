@@ -33,11 +33,19 @@ class MorphologicalOperationsDemo:
         self.__cv2 = cv2
         self.__plt = plt
         self.__fingerprint = fingerprint
-        self.__kernel = np.ones((3, 3), np.uint8)
+        self.__kernel = None # np.ones((3, 3), np.uint8)
         self.__labels = ["Original", "Binary", "Erosion", "Dilation", "Opening", "Closing"]
         self.__image = cv2.imread(fingerprint)
 
     def process_fingerprint(self):
+        kernel_size = input("Specify N for kernel size (N x N) - Default is 3: ")
+
+        try:
+            kernel_size = int(kernel_size)
+        except ValueError:
+            kernel_size = 3
+
+        self.__kernel = self.__np.ones((kernel_size, kernel_size), self.__np.uint8)
         images = [self.__image]
         gray = self.__cv2.cvtColor(self.__image, self.__cv2.COLOR_BGR2GRAY)
         # Let's use Otsu's method to perform automatic image thresholding - https://en.wikipedia.org/wiki/Otsu%27s_method
