@@ -35,7 +35,8 @@ class MorphologicalOperationsDemo:
         self.__fingerprint = fingerprint
         self.__kernel = None # np.ones((3, 3), np.uint8)
         self.__labels = ["Original", "Binary", "Erosion", "Dilation", "Opening", "Closing"]
-        self.__image = cv2.imread(fingerprint)
+        img = cv2.imread(fingerprint)
+        self.__image = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
     def process_fingerprint(self):
         kernel_size = input("Specify N for kernel size (N x N) - Default is 3: ")
