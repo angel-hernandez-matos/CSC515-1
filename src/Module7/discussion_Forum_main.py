@@ -138,18 +138,19 @@ class EdgeDetectionDemo:
         if img_creation_param is None:
             img_creation_param = ImageCreationParam()
 
-        self.tiny_number = 1e-8 # To prevent division by zero
         self.__np = np
         self.__cv2 = cv2
         self.__plt = plt
-        self.__images = []
         self.__synthetic_image = None
         self.__image_creation_param = img_creation_param
+        self.tiny_number = 1e-8  # To prevent division by zero
+        self.__images = { "sobel": [], "laplacian": [], "canny": [] }
 
     def __create_synthetic_image(self):
         # Let's create image
         h, w = (self.__image_creation_param.width, self.__image_creation_param.height)
         img = self.__np.full((h, w), self.__image_creation_param.background_intensity, dtype=self.__np.uint8)
+        self.__synthetic_image = img
         # Top-left (80, 80) and bottom-right (150, 150)
         square_tl = (80, 80)
         square_br = (150, 150)
@@ -217,43 +218,37 @@ class EdgeDetectionDemo:
 
         img, sq_tl, sq_br, c_center, c_radius = self.__create_synthetic_image()
         ground_truth = self.__create_edge_map(img.shape, sq_tl, sq_br, c_center, c_radius)
-        self.__images.append(img)
 
         # Sobel
-        sobel_img = None
         sobel_results = {}
         sobel_magnitude = self.__sobel_edge_detector(img)
         for th in sobel_thresh_list:
             _, sobel_bin = self.__cv2.threshold(sobel_magnitude, th, 255, self.__cv2.THRESH_BINARY)
             sobel_bin = (sobel_bin > 0).astype(self.__np.uint8)
             sobel_results[th] = self.__evaluate_edges(sobel_bin, ground_truth)
-            sobel_img = th
-            self.__images.append(th)
+        self.__images["sobel"].append(sobel_magnitude)
 
         # Laplacian
-        lap_img = None
         lap_results = {}
         lap_magnitude = self.__laplacian_edge_detector(img)
         for th in lap_thresh_list:
             _, lap_bin = self.__cv2.threshold(lap_magnitude, th, 255, self.__cv2.THRESH_BINARY)
             lap_bin = (lap_bin > 0).astype(self.__np.uint8)
             lap_results[th] = self.__evaluate_edges(lap_bin, ground_truth)
-            lap_img = th
-            self.__images.append(th)
+        self.__images["laplacian"].append(lap_magnitude)
 
         # Canny
-        canny_img = None
         canny_results = {}
         for low, high in canny_thresh_pairs:
             canny = self.__canny_edges(img, low, high)
             canny_bin = (canny > 0).astype(self.__np.uint8)
             canny_results[(low, high)] = self.__evaluate_edges(canny_bin, ground_truth)
-            canny_img = canny
-            self.__images.append(canny)
+        self.__images["canny"].append(canny_bin)
 
         return { "sobel": sobel_results, "laplacian": lap_results, "canny": canny_results }
 
-    def __print_tables(self, results, title="Scenario"):
+    @staticmethod
+    def __print_tables(results, title="Scenario"):
         def __print_helper(detector_name, data, is_canny=False):
             print(f"\n{detector_name}")
             if is_canny:
@@ -292,7 +287,46 @@ class EdgeDetectionDemo:
                                           canny_thresh_pairs=((30, 100), (80, 160), (120, 220)))
 
         self.__print_tables(changed, "Clean image with changes to intensities and thresholds")
-        x = 0
+        self.__show_images()
+
+    def __show_group(self, fig, start_row, group_name, title_prefix):
+        plt = self.__plt
+        images = self.__images.get(group_name, [])
+        cols = 3  # choose any layout you like
+        rows = (len(images) + cols - 1) // cols
+
+        for i, img in enumerate(images):
+            ax = fig.add_subplot(start_row + i // cols, cols, (i % cols) + 1)
+            ax.imshow(img, cmap="gray")
+            ax.set_title(f"{title_prefix} #{i + 1}")
+            ax.axis("off")
+
+        return rows
+
+    def __show_images(self):
+        cols = 3
+        plt = self.__plt
+        images = [("Synthetic Image", self.__synthetic_image)]
+        for name in ["sobel", "laplacian", "canny"]:
+            for i, img in enumerate(self.__images[name]):
+                images.append((f"{name.capitalize()} #{i + 1}", img))
+
+        total = len(images)
+        rows = (total + cols - 1) // cols  # ceiling division
+        fig, axes = plt.subplots(rows, cols, figsize=(5 * cols, 4 * rows))
+        axes = axes.flatten()
+
+        for ax, (title, img) in zip(axes, images):
+            ax.imshow(img, cmap="gray")
+            ax.set_title(title)
+            ax.axis("off")
+
+        # Hide any unused axes
+        for ax in axes[len(images):]:
+            ax.axis("off")
+
+        plt.tight_layout()
+        plt.show()
 
 class TestCaseRunner:
     @staticmethod
